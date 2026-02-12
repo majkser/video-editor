@@ -2,7 +2,6 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
 # C extensions
 *.so
 
@@ -151,3 +150,7 @@ cython_debug/
 
 # Mac
 .DS_Store
+
+# database files
+*.db
+uploaded_videos/

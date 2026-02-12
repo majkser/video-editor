@@ -2,12 +2,14 @@ from fastapi import HTTPException
 from pathlib import Path
 from fastapi import UploadFile
 from random import uniform
-from ...interfaces.video_processing.video_processing import VideoProcessing
+from ..interfaces.video_processing import VideoProcessing
+from ..repositories.video_processing import VideoProcessingRepository
 
 class VideoProcessingImpl(VideoProcessing):
-    def __init__(self, server_root: Path, upload_dir: Path):
+    def __init__(self, server_root: Path, upload_dir: Path, repository: VideoProcessingRepository):
         self.SERVER_ROOT = server_root
         self.UPLOAD_DIR = upload_dir
+        self.repository = repository
     
     async def upload_video(self, file: UploadFile) -> dict:
         if not file.filename.lower().endswith(((".mp4", ".mov"))):
@@ -18,6 +20,8 @@ class VideoProcessingImpl(VideoProcessing):
             content = await file.read()
             buffer.write(content)
 
+        self.repository.create_video_processing_entry(video_name=file_path.name, user_id=1)  # Replace 1 with the actual user_id
+        
         return {"filename": file_path.name, "status": "uploaded"}
     
     async def send_video(self) -> bytes:
