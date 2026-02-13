@@ -6,19 +6,24 @@ from ..services.video_processing import VideoProcessingImpl
 from ..repositories.video_processing import VideoProcessingRepository
 from sqlalchemy.orm import Session
 
+
 class VideoProcessingProvider(BaseProvider):
     SERVER_ROOT = Path(__file__).parent.parent.parent
     UPLOAD_DIR = SERVER_ROOT / "uploaded_videos"
-    
+
     @staticmethod
-    def get_repository(db: Session = Depends(get_db_session)) -> VideoProcessingRepository:
+    def get_repository(
+        db: Session = Depends(get_db_session),
+    ) -> VideoProcessingRepository:
         return VideoProcessingRepository(db)
-    
+
     @staticmethod
-    def get_service(repository: VideoProcessingRepository = Depends(get_repository)) -> VideoProcessingImpl:
+    def get_service(
+        repository: VideoProcessingRepository = Depends(get_repository),
+    ) -> VideoProcessingImpl:
         VideoProcessingProvider.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         return VideoProcessingImpl(
-            server_root=VideoProcessingProvider.SERVER_ROOT, 
+            server_root=VideoProcessingProvider.SERVER_ROOT,
             upload_dir=VideoProcessingProvider.UPLOAD_DIR,
-            repository=repository
+            repository=repository,
         )

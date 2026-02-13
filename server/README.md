@@ -36,3 +36,15 @@ uvicorn app.main:app --reload
 The server will start at `http://127.0.0.1:8000`.
 
 You can access the API documentation at `http://127.0.0.1:8000/docs` or `http://127.0.0.1:8000/redoc`.
+
+## Code Formatting
+
+We use Black for code formatting.
+
+**Format code before committing:**
+
+To format all Python files in the current directory and its subdirectories, use:
+
+```bash
+black .
+```

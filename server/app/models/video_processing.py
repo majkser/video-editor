@@ -2,6 +2,7 @@ from ..database import Base
 from sqlalchemy import Integer, String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
+
 class VideoProcessingModel(Base):
     __tablename__ = "video_processing"
 
