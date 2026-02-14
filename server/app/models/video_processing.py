@@ -8,7 +8,7 @@ class VideoProcessingModel(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     video_name: Mapped[str] = mapped_column(String)
-    user_id: Mapped[int] = mapped_column(Integer)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.user_id"))
 
     def __repr__(self):
         return f"<VideoProcessingModel(id={self.id}, video_name='{self.video_name}', user_id={self.user_id})>"
