@@ -31,6 +31,14 @@ class VideoProcessingImpl(VideoProcessing):
 
         return {"filename": file_path.name, "status": "uploaded"}
 
-    async def send_video(self) -> bytes:
-        # Implementation for sending video back to client
-        pass
+    async def send_video(self, video_name: str) -> bytes:
+
+        file_path = self.UPLOAD_DIR / video_name
+
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=404, detail=f"Video '{video_name}' not found"
+            )
+
+        with open(file_path, "rb") as buffer:
+            return buffer.read()
