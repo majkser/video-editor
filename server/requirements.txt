@@ -5,3 +5,4 @@ moviepy
 sqlalchemy
 pydantic
 black
+ffmpeg-python
