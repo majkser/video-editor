@@ -3,12 +3,12 @@ from pathlib import Path
 from fastapi import UploadFile
 from random import uniform
 from ..interfaces.video_processing import VideoProcessing
-from ..repositories.video_processing import VideoProcessingRepository
+from ..repositories.video import VideoModelRepository
 
 
 class VideoProcessingImpl(VideoProcessing):
     def __init__(
-        self, server_root: Path, upload_dir: Path, repository: VideoProcessingRepository
+        self, server_root: Path, upload_dir: Path, repository: VideoModelRepository
     ):
         self.SERVER_ROOT = server_root
         self.UPLOAD_DIR = upload_dir
@@ -25,9 +25,9 @@ class VideoProcessingImpl(VideoProcessing):
             content = await file.read()
             buffer.write(content)
 
-        self.repository.create_video_processing_entry(
-            video_name=file_path.name, user_id=1
-        )  # Replace 1 with the actual user_id
+        self.repository.create_video_model_entry(
+            video_name=file_path.name, project_id=1
+        )  # Replace 1 with the actual project_id
 
         return {"filename": file_path.name, "status": "uploaded"}
 

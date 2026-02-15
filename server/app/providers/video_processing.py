@@ -3,7 +3,7 @@ from fastapi import Depends
 from app.database import get_db_session
 from app.interfaces.provider import BaseProvider
 from ..services.video_processing import VideoProcessingImpl
-from ..repositories.video_processing import VideoProcessingRepository
+from ..repositories.video import VideoModelRepository
 from sqlalchemy.orm import Session
 
 
@@ -14,12 +14,12 @@ class VideoProcessingProvider(BaseProvider):
     @staticmethod
     def get_repository(
         db: Session = Depends(get_db_session),
-    ) -> VideoProcessingRepository:
-        return VideoProcessingRepository(db)
+    ) -> VideoModelRepository:
+        return VideoModelRepository(db)
 
     @staticmethod
     def get_service(
-        repository: VideoProcessingRepository = Depends(get_repository),
+        repository: VideoModelRepository = Depends(get_repository),
     ) -> VideoProcessingImpl:
         VideoProcessingProvider.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         return VideoProcessingImpl(
