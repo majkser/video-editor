@@ -4,10 +4,10 @@ from fastapi.responses import Response
 from app.services.media_processing import MediaProcessingImpl
 from app.providers.media_processing import MediaProcessingProvider
 
-router = APIRouter()
+router = APIRouter(prefix='/media', tags=['media'])
 
 
-@router.post("/upload-media")
+@router.post("/upload")
 async def upload_media(
     file: UploadFile,
     media_processing: MediaProcessingImpl = Depends(
@@ -17,7 +17,7 @@ async def upload_media(
     return await media_processing.upload_media(file)
 
 
-@router.get("/download-media/{media_name}")
+@router.get("/download/{media_name}")
 async def download_media(
     media_name: str,
     media_processing: MediaProcessingImpl = Depends(
@@ -29,6 +29,6 @@ async def download_media(
 
     return Response(
         content=media_bytes,
-        media_type="video/mp4",
+        media_type="application/octet-stream",
         headers={"Content-Disposition": f"attachment; filename={media_name}"},
     )
