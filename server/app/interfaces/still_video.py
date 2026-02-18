@@ -1,0 +1,8 @@
+from abc import ABC, abstractmethod
+
+
+class StillVideo(ABC):
+    @abstractmethod
+    async def combine_still_with_audio(self, still_id: int, audio_id: int) -> dict:
+        """Combines a still image with a audio file and returns the path of the combined media."""
+        raise NotImplementedError("Subclasses must implement combine_still_with_audio method")
