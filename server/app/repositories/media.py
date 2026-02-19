@@ -2,6 +2,7 @@ from ..models.media import MediaModel
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
+
 class MediaModelRepository:
     def __init__(self, db: Session):
         self.db = db
