@@ -1,3 +1,5 @@
+from app.error_handler.error_handler import AlreadyExistsError
+
 from ..interfaces.project import Project, ProjectModel
 from ..repositories.project import ProjectModelRepository
 
@@ -15,7 +17,7 @@ class ProjectImpl(Project):
         )
 
         if existing_project:
-            raise ValueError(
+            raise AlreadyExistsError(
                 f"Project name '{project_name}' already exist. Choose a different name to create new project"
             )
 

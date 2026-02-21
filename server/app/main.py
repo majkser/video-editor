@@ -9,13 +9,14 @@ from . import models
 
 app = FastAPI()
 
+
 @app.exception_handler(AppError)
 def handle_app_error(request: Request, exc: AppError):
 
     return JSONResponse(
-        status_code=ERROR_MAP.get(type(exc), 400),
-        content={"detail": exc.message}
+        status_code=ERROR_MAP.get(type(exc), 400), content={"detail": exc.message}
     )
+
 
 app.include_router(api_router, prefix="/api")
 

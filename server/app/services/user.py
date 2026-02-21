@@ -1,3 +1,5 @@
+from app.error_handler.error_handler import AlreadyExistsError
+
 from ..interfaces.user import User
 from ..repositories.user import UserModelRepository
 from ..models.user import UserModel
@@ -12,7 +14,7 @@ class UserImpl(User):
         existing_user = self.repository.get_user_by_username(username)
 
         if existing_user:
-            raise ValueError(f"Username '{username}' already exists.")
+            raise AlreadyExistsError(f"User with username '{username}' already exists")
 
         api_key = f"{username}_{secrets.token_urlsafe(16)}"
 
