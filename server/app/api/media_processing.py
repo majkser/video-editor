@@ -26,17 +26,10 @@ async def download_media(
     ),
 ):
 
-    media_bytes = await media_processing.send_media(media_id)
-
-    # Get media name for encoding filename
-    media = media_processing.repository.get_media_model_by_id(media_id)
-    if media is None:
-        raise HTTPException(
-            status_code=404, detail=f"Media with id {media_id} not found"
-        )
+    media_bytes, orginal_filename = await media_processing.send_media(media_id)
 
     # Encode filename for non-ASCII resolves problem of polish chars
-    encoded_filename = quote(media.media_original_name)
+    encoded_filename = quote(orginal_filename)
 
     return Response(
         content=media_bytes,

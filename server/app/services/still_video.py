@@ -1,3 +1,5 @@
+from app.error_handler.error_handler import FfmpegError, NotFoundError, ValidationError
+
 from ..interfaces.still_video import StillVideo
 from app.repositories.media import MediaModelRepository
 from pathlib import Path
@@ -20,16 +22,16 @@ class StillVideoImpl(StillVideo):
         audio = self.repository.get_media_model_by_id(audio_id)
 
         if not still:
-            raise ValueError(f"Still image with ID {still_id} not found.")
+            raise NotFoundError(f"Still image with ID {still_id} not found.")
         elif still.media_type != "image":
-            raise ValueError(
+            raise ValidationError(
                 f"{still.media_name} is not an image file, it is a {still.media_type}."
             )
 
         if not audio:
-            raise ValueError(f"Audio file with ID {audio_id} not found.")
+            raise NotFoundError(f"Audio file with ID {audio_id} not found.")
         elif audio.media_type != "audio":
-            raise ValueError(
+            raise ValidationError(
                 f"{audio.media_name} is not an audio file, it is a {audio.media_type}."
             )
 
@@ -52,6 +54,6 @@ class StillVideoImpl(StillVideo):
                 .run(quiet=True)
             )
         except ffmpeg.Error as e:
-            raise RuntimeError(f"Error combining still and audio: {e.stderr.decode()}")
+            raise FfmpegError(f"Error combining still and audio: {e.stderr.decode()}")
 
         return StillVideoResult(video_path=str(output_path), video_name=output_filename)

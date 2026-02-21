@@ -20,16 +20,12 @@ async def create_project(
     current_user: UserModel = Depends(get_current_user),
     project_service: ProjectImpl = Depends(ProjectProvider.get_service),
 ):
-    try:
-        project = await project_service.create_project(
-            project_name=request.project_name,
-            owner_id=current_user.user_id,
-        )
+    project = await project_service.create_project(
+        project_name=request.project_name,
+        owner_id=current_user.user_id,
+    )
 
-        return ProjectCreateResponse(
-            project_id=project.project_id,
-            project_name=project.project_name,
-        )
-
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return ProjectCreateResponse(
+        project_id=project.project_id,
+        project_name=project.project_name,
+    )
