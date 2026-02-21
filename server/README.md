@@ -21,9 +21,12 @@ This is the backend server for the Video Editor project, built with FastAPI.
       ```
 
 3.  Install dependencies:
+
     ```bash
     pip install -r requirements.txt
     ```
+
+4.  Install ffmpeg on your system `https://www.ffmpeg.org/download.html`
 
 ## Running the Project
 
