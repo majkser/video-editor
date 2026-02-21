@@ -1,14 +1,15 @@
-from fastapi import APIRouter, HTTPException, UploadFile, Depends
+from fastapi import APIRouter, UploadFile, Depends
 from fastapi.responses import Response
 from urllib.parse import quote
 
+from app.dependencies.auth import get_current_user
 from app.services.media_processing import MediaProcessingImpl
 from app.providers.media_processing import MediaProcessingProvider
 
 router = APIRouter(prefix="/media", tags=["media"])
 
 
-@router.post("/upload")
+@router.post("/upload", dependencies=[Depends(get_current_user)])
 async def upload_media(
     file: UploadFile,
     media_processing: MediaProcessingImpl = Depends(
@@ -18,7 +19,7 @@ async def upload_media(
     return await media_processing.upload_media(file)
 
 
-@router.get("/download/{media_id}")
+@router.get("/download/{media_id}", dependencies=[Depends(get_current_user)])
 async def download_media(
     media_id: int,
     media_processing: MediaProcessingImpl = Depends(

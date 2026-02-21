@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.error_handler.error_handler import AppError, NotFoundError
+from app.error_handler.error_handler import AppError
 from app.error_handler.error_map import ERROR_MAP
 from .api.api import api_router
 from .database import Base, engine
