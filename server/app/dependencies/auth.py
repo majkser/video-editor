@@ -1,4 +1,4 @@
-from fastapi import Header, HTTPException, Depends
+from fastapi import Header, Depends
 
 from app.error_handler.error_handler import UnauthorizedError
 from ..models.user import UserModel

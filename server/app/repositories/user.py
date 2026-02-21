@@ -22,5 +22,5 @@ class UserModelRepository:
 
         hashed_api_key = hashlib.sha256(api_key.encode()).hexdigest()
         statement = select(UserModel).where(UserModel.api_key == hashed_api_key)
-        
+
         return self.db.scalars(statement).first()

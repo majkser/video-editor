@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi import status
 
 from ..schemas.project import ProjectCreateRequest, ProjectCreateResponse

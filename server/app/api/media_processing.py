@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile, Depends
+from fastapi import APIRouter, UploadFile, Depends
 from fastapi.responses import Response
 from urllib.parse import quote
 
