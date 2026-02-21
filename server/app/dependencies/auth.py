@@ -1,4 +1,6 @@
 from fastapi import Header, HTTPException, Depends
+
+from app.error_handler.error_handler import UnauthorizedError
 from ..models.user import UserModel
 from ..repositories.user import UserModelRepository
 from ..providers.user import UserProvider
@@ -12,6 +14,6 @@ async def get_current_user(
     user = user_repository.get_user_by_api_key(api_key)
 
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
+        raise UnauthorizedError("Invalid API key provided")
 
     return user

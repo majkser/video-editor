@@ -153,4 +153,4 @@ cython_debug/
 
 # database files
 *.db
-uploaded_videos/
+uploaded_media/

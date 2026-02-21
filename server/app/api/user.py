@@ -17,11 +17,8 @@ async def register_user(
     request: UserRegisterRequest,
     user_service: UserImpl = Depends(UserProvider.get_service),
 ):
-    try:
-        user = await user_service.register_user(request.username)
-        return UserRegisterResponse(
-            username=user.username,
-            api_key=user.api_key,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    user = await user_service.register_user(request.username)
+    return UserRegisterResponse(
+        username=user.username,
+        api_key=user.api_key,
+    )
