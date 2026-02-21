@@ -4,6 +4,8 @@ from fastapi import UploadFile
 import uuid
 import ffmpeg
 from PIL import Image
+
+from app.error_handler.error_handler import FfmpegError, NotFoundError, ValidationError
 from ..interfaces.media_processing import MediaProcessing
 from ..repositories.media import MediaModelRepository
 from ..models.media import MediaModel, MediaType
@@ -31,9 +33,8 @@ class MediaProcessingImpl(MediaProcessing):
         )
 
         if file_ext not in all_extensions:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported file type. Allowed: Videos {MediaProcessingImpl.VIDEO_EXTENSIONS}, Audio {MediaProcessingImpl.AUDIO_EXTENSIONS}, Images {MediaProcessingImpl.IMAGE_EXTENSIONS}",
+            raise ValidationError(
+                f"Unsupported file type. Allowed: Videos {MediaProcessingImpl.VIDEO_EXTENSIONS}, Audio {MediaProcessingImpl.AUDIO_EXTENSIONS}, Images {MediaProcessingImpl.IMAGE_EXTENSIONS}",
             )
 
         file_extension = Path(file.filename).suffix.lower()
@@ -66,25 +67,21 @@ class MediaProcessingImpl(MediaProcessing):
             "status": "uploaded",
         }
 
-    async def send_media(self, media_id: int) -> bytes:
+    async def send_media(self, media_id: int) -> tuple[bytes, str]:
 
         media = self.repository.get_media_model_by_id(media_id)
 
         if media is None:
-            raise HTTPException(  # TODO: extract http exceptions from services
-                status_code=404, detail=f"Media with id {media_id} not found"
-            )
+            raise NotFoundError(f"Media with id {media_id} not found")
 
         media_name = media.media_name
         file_path = self.UPLOAD_DIR / media_name
 
         if not file_path.exists():
-            raise HTTPException(
-                status_code=404, detail=f"Media file '{media_name}' not found on disk"
-            )
+            raise NotFoundError(f"Media file '{media_name}' not found on disk")
 
         with open(file_path, "rb") as buffer:
-            return buffer.read()
+            return buffer.read(), media.media_orginal_name
 
     @staticmethod
     def __get_media_type(file_path: Path) -> MediaType:
@@ -96,7 +93,7 @@ class MediaProcessingImpl(MediaProcessing):
         elif ext in MediaProcessingImpl.IMAGE_EXTENSIONS:
             return MediaType.IMAGE
         else:
-            raise ValueError(f"Unknown media type for extension: {ext}")
+            raise ValidationError(f"Unknown media type for extension: {ext}")
 
     @staticmethod
     def __extract_media_metadata(file_path: Path) -> dict:
@@ -120,7 +117,7 @@ class MediaProcessingImpl(MediaProcessing):
                         s for s in probe["streams"] if s["codec_type"] == "video"
                     ]
                     if not video_streams:
-                        raise ValueError("No video stream found in file")
+                        raise FfmpegError("No video stream found in file")
                     video_stream = video_streams[0]
 
                     return {
@@ -145,7 +142,7 @@ class MediaProcessingImpl(MediaProcessing):
                         s for s in probe["streams"] if s["codec_type"] == "audio"
                     ]
                     if not audio_streams:
-                        raise ValueError("No audio stream found in file")
+                        raise FfmpegError("No audio stream found in file")
                     audio_stream = audio_streams[0]
 
                     return {
@@ -159,7 +156,7 @@ class MediaProcessingImpl(MediaProcessing):
                         "size_in_bytes": int(probe["format"]["size"]),
                     }
                 else:
-                    raise ValueError(f"Unsupported media type: {media_type}")
+                    raise ValidationError(f"Unsupported media type: {media_type}")
 
         except Exception as e:
-            raise ValueError(f"Error extracting media metadata: {str(e)}")
+            raise FfmpegError(f"Error extracting media metadata: {str(e)}")
