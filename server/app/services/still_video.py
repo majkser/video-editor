@@ -1,4 +1,5 @@
 from app.error_handler.error_handler import FfmpegError, NotFoundError, ValidationError
+from app.models.media import MediaType
 
 from ..interfaces.still_video import StillVideo
 from app.repositories.media import MediaModelRepository
@@ -23,14 +24,14 @@ class StillVideoImpl(StillVideo):
 
         if not still:
             raise NotFoundError(f"Still image with ID {still_id} not found.")
-        elif still.media_type != "image":
+        elif still.media_type != MediaType.IMAGE:
             raise ValidationError(
                 f"{still.media_name} is not an image file, it is a {still.media_type}."
             )
 
         if not audio:
             raise NotFoundError(f"Audio file with ID {audio_id} not found.")
-        elif audio.media_type != "audio":
+        elif audio.media_type != MediaType.AUDIO:
             raise ValidationError(
                 f"{audio.media_name} is not an audio file, it is a {audio.media_type}."
             )

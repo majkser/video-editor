@@ -25,19 +25,18 @@ class MediaProcessingImpl(MediaProcessing):
 
     async def upload_media(self, file: UploadFile) -> dict:
         # Check if file extension is supported
-        file_ext = Path(file.filename).suffix.lower()
+        file_extension = Path(file.filename).suffix.lower()
         all_extensions = (
             MediaProcessingImpl.VIDEO_EXTENSIONS
             + MediaProcessingImpl.AUDIO_EXTENSIONS
             + MediaProcessingImpl.IMAGE_EXTENSIONS
         )
 
-        if file_ext not in all_extensions:
+        if file_extension not in all_extensions:
             raise ValidationError(
                 f"Unsupported file type. Allowed: Videos {MediaProcessingImpl.VIDEO_EXTENSIONS}, Audio {MediaProcessingImpl.AUDIO_EXTENSIONS}, Images {MediaProcessingImpl.IMAGE_EXTENSIONS}",
             )
 
-        file_extension = Path(file.filename).suffix.lower()
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         file_path = self.UPLOAD_DIR / unique_filename
         with open(file_path, "wb") as buffer:
