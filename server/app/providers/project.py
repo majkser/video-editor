@@ -1,12 +1,11 @@
 from fastapi import Depends
-from ..interfaces.provider import BaseProvider
 from sqlalchemy.orm import Session
 from ..database import get_db_session
 from ..repositories.project import ProjectModelRepository
 from ..services.project import ProjectImpl
 
 
-class ProjectProvider(BaseProvider):
+class ProjectProvider:
     @staticmethod
     def get_repository(
         db: Session = Depends(get_db_session),

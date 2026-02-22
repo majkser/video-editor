@@ -3,10 +3,9 @@ from sqlalchemy.orm import Session
 from ..database import get_db_session
 from ..repositories.user import UserModelRepository
 from ..services.user import UserImpl
-from ..interfaces.provider import BaseProvider
 
 
-class UserProvider(BaseProvider):
+class UserProvider:
     @staticmethod
     def get_repository(
         db: Session = Depends(get_db_session),
