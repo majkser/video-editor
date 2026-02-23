@@ -5,8 +5,10 @@ from fastapi import UploadFile
 
 class MediaProcessing(ABC):
     @abstractmethod
-    async def upload_media(self, file: UploadFile) -> dict:
-        """Uploads a media file to the server and returns the path where it is stored."""
+    async def upload_media(
+        self, file: UploadFile, project_id: int, user_id: int
+    ) -> dict:
+        """Uploads a media file to the server, links it to the given project owned by user_id."""
         raise NotImplementedError("Subclasses must implement upload_media method")
 
     @abstractmethod
