@@ -25,6 +25,7 @@ class MediaProcessingImpl(MediaProcessing):
     ):
         self.SERVER_ROOT = server_root
         self.UPLOAD_DIR = upload_dir
+        self.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         self.repository = repository
         self.project_repository = project_repository
 
@@ -53,7 +54,6 @@ class MediaProcessingImpl(MediaProcessing):
             )
 
         unique_filename = f"{uuid.uuid4()}{file_extension}"
-        self.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         file_path = self.UPLOAD_DIR / unique_filename
         with open(file_path, "wb") as buffer:
             content = await file.read()
