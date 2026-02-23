@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from app.database import get_db_session
 from app.interfaces.edit_media import EditMedia
 from app.interfaces.media_processing import MediaProcessing
-from app.interfaces.media_processing import MediaProcessing
 from app.interfaces.still_video import StillVideo
 from app.repositories.media import MediaModelRepository
 from app.services.edit_media import EditMediaImpl

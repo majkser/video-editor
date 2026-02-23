@@ -1,6 +1,6 @@
 from zipfile import Path
 
-from app.error_handler.error_handler import FfmpegError, FfmpegError, NotFoundError
+from app.error_handler.error_handler import FfmpegError, NotFoundError
 from app.interfaces.edit_media import EditMedia
 import ffmpeg
 
