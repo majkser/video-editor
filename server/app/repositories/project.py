@@ -20,3 +20,11 @@ class ProjectModelRepository:
             ProjectModel.project_name == project_name, ProjectModel.owner_id == owner_id
         )
         return self.db.scalars(statement).first()
+
+    def get_project_by_id_and_owner(
+        self, project_id: int, owner_id: int
+    ) -> ProjectModel | None:
+        statement = select(ProjectModel).where(
+            ProjectModel.project_id == project_id, ProjectModel.owner_id == owner_id
+        )
+        return self.db.scalars(statement).first()

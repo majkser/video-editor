@@ -8,6 +8,7 @@ from app.interfaces.edit_media import EditMedia
 from app.interfaces.media_processing import MediaProcessing
 from app.interfaces.still_video import StillVideo
 from app.repositories.media import MediaModelRepository
+from app.repositories.project import ProjectModelRepository
 from app.services.edit_media import EditMediaImpl
 from app.services.media_processing import MediaProcessingImpl
 from app.services.still_video import StillVideoImpl
@@ -24,13 +25,21 @@ class MediaProvider:
         return MediaModelRepository(db)
 
     @staticmethod
+    def get_project_repository(
+        db: Session = Depends(get_db_session),
+    ) -> ProjectModelRepository:
+        return ProjectModelRepository(db)
+
+    @staticmethod
     def get_media_processing_service(
         repository: MediaModelRepository = Depends(get_repository),
+        project_repository: ProjectModelRepository = Depends(get_project_repository),
     ) -> MediaProcessing:
         return MediaProcessingImpl(
             server_root=MediaProvider.SERVER_ROOT,
             upload_dir=MediaProvider.UPLOAD_DIR,
             repository=repository,
+            project_repository=project_repository,
         )
 
     @staticmethod

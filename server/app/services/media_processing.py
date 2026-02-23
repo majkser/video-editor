@@ -7,6 +7,7 @@ from PIL import Image
 from app.error_handler.error_handler import FfmpegError, NotFoundError, ValidationError
 from ..interfaces.media_processing import MediaProcessing
 from ..repositories.media import MediaModelRepository
+from ..repositories.project import ProjectModelRepository
 from ..models.media import MediaModel, MediaType
 
 
@@ -16,13 +17,20 @@ class MediaProcessingImpl(MediaProcessing):
     IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".gif", ".webp")
 
     def __init__(
-        self, server_root: Path, upload_dir: Path, repository: MediaModelRepository
+        self,
+        server_root: Path,
+        upload_dir: Path,
+        repository: MediaModelRepository,
+        project_repository: ProjectModelRepository,
     ):
         self.SERVER_ROOT = server_root
         self.UPLOAD_DIR = upload_dir
         self.repository = repository
+        self.project_repository = project_repository
 
-    async def upload_media(self, file: UploadFile) -> dict:
+    async def upload_media(
+        self, file: UploadFile, project_id: int, user_id: int
+    ) -> dict:
         # Check if file extension is supported
         file_extension = Path(file.filename).suffix.lower()
         all_extensions = (
@@ -36,7 +44,16 @@ class MediaProcessingImpl(MediaProcessing):
                 f"Unsupported file type. Allowed: Videos {MediaProcessingImpl.VIDEO_EXTENSIONS}, Audio {MediaProcessingImpl.AUDIO_EXTENSIONS}, Images {MediaProcessingImpl.IMAGE_EXTENSIONS}",
             )
 
+        project = self.project_repository.get_project_by_id_and_owner(
+            project_id, user_id
+        )
+        if not project:
+            raise NotFoundError(
+                f"Project with id {project_id} not found for current user"
+            )
+
         unique_filename = f"{uuid.uuid4()}{file_extension}"
+        self.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         file_path = self.UPLOAD_DIR / unique_filename
         with open(file_path, "wb") as buffer:
             content = await file.read()
@@ -48,7 +65,7 @@ class MediaProcessingImpl(MediaProcessing):
             media_name=unique_filename,
             media_original_name=file.filename,
             media_type=metadata.get("media_type"),
-            project_id=1,  # TODO: Replace 1 with the actual project_id
+            project_id=project_id,
             width=metadata.get("width"),
             height=metadata.get("height"),
             duration=metadata.get("duration"),
