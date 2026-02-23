@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, model_validator
 
 
 class Cut(BaseModel):
-    start: float = (Field(),)
+    start: float = Field()
     end: float = Field()
 
     @model_validator(mode="after")
