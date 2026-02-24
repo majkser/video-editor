@@ -6,7 +6,13 @@ import ffmpeg
 
 from app.models.media import MediaType
 from app.repositories.media import MediaModelRepository
-from app.schemas.edit_media import EditMediaCreateRequest
+from app.schemas.edit_media import (
+    EditMediaBatchRequest,
+    EditMediaBatchResponse,
+    EditMediaBatchErrorItem,
+    EditMediaBatchResultItem,
+    EditMediaCreateRequest,
+)
 
 
 class EditMediaImpl(EditMedia):
@@ -57,3 +63,30 @@ class EditMediaImpl(EditMedia):
             raise FfmpegError(f"Error editing media: {e.stderr.decode()}")
 
         return {"edited_media_path": str(output_path)}
+
+    async def edit_media_batch(
+        self, request: EditMediaBatchRequest
+    ) -> EditMediaBatchResponse:
+        results: list[EditMediaBatchResultItem] = []
+        errors: list[EditMediaBatchErrorItem] = []
+
+        for item in request.edits:
+            try:
+                result = await self.edit_media(item.media_id, item.edits)
+                results.append(
+                    EditMediaBatchResultItem(
+                        media_id=item.media_id,
+                        status="success",
+                        edited_media_path=result["edited_media_path"],
+                    )
+                )
+            except (NotFoundError, FfmpegError) as e:
+                errors.append(
+                    EditMediaBatchErrorItem(
+                        media_id=item.media_id,
+                        status="error",
+                        detail=e.message,
+                    )
+                )
+
+        return EditMediaBatchResponse(results=results, errors=errors)

@@ -28,7 +28,9 @@ class MediaProvider:
     @staticmethod
     def get_media_processing_service(
         repository: MediaModelRepository = Depends(get_repository),
-        project_repository: ProjectModelRepository = Depends(ProjectProvider.get_repository),
+        project_repository: ProjectModelRepository = Depends(
+            ProjectProvider.get_repository
+        ),
     ) -> MediaProcessing:
         return MediaProcessingImpl(
             server_root=MediaProvider.SERVER_ROOT,
