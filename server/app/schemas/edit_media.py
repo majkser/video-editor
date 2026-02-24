@@ -47,16 +47,8 @@ class EditMediaBatchRequest(BaseModel):
 
 class EditMediaBatchResultItem(BaseModel):
     media_id: int
-    status: str
     edited_media_path: str
-
-
-class EditMediaBatchErrorItem(BaseModel):
-    media_id: int
-    status: str
-    detail: str
 
 
 class EditMediaBatchResponse(BaseModel):
     results: list[EditMediaBatchResultItem] = Field(default_factory=list)
-    errors: list[EditMediaBatchErrorItem] = Field(default_factory=list)
