@@ -10,7 +10,7 @@ from app.schemas.edit_media import (
     EditMediaBatchRequest,
     EditMediaBatchResponse,
     EditMediaBatchResultItem,
-    EditMediaCreateRequest,
+    EditMediaModel,
 )
 
 
@@ -22,7 +22,24 @@ class EditMediaImpl(EditMedia):
         self.UPLOAD_DIR = upload_dir
         self.repository = repository
 
-    async def edit_media(self, media_id: int, edits: EditMediaCreateRequest) -> dict:
+    async def edit_media_batch(
+        self, request: EditMediaBatchRequest
+    ) -> EditMediaBatchResponse:
+        results = []
+        for item in request.edits:
+            try:
+                result = await self.__edit_media(item.media_id, item.edits)
+                results.append(
+                    EditMediaBatchResultItem(
+                        media_id=item.media_id,
+                        edited_media_path=result["edited_media_path"],
+                    )
+                )
+            except (NotFoundError, FfmpegError) as e:
+                pass
+        return EditMediaBatchResponse(results=results)
+
+    async def __edit_media(self, media_id: int, edits: EditMediaModel) -> dict:
         media_file = self.repository.get_media_model_by_id(media_id)
         if not media_file:
             raise NotFoundError(f"Media file with ID {media_id} not found")
@@ -62,20 +79,3 @@ class EditMediaImpl(EditMedia):
             raise FfmpegError(f"Error editing media: {e.stderr.decode()}")
 
         return {"edited_media_path": str(output_path)}
-
-    async def edit_media_batch(
-        self, request: EditMediaBatchRequest
-    ) -> EditMediaBatchResponse:
-        results = []
-        for item in request.edits:
-            try:
-                result = await self.edit_media(item.media_id, item.edits)
-                results.append(
-                    EditMediaBatchResultItem(
-                        media_id=item.media_id,
-                        edited_media_path=result["edited_media_path"],
-                    )
-                )
-            except (NotFoundError, FfmpegError) as e:
-                pass
-        return EditMediaBatchResponse(results=results)

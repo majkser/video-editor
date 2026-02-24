@@ -12,7 +12,7 @@ class Cut(BaseModel):
         return self
 
 
-class EditMediaCreateRequest(BaseModel):
+class EditMediaModel(BaseModel):
     cuts: list[Cut] = Field(
         ...,
         description="List of cuts to apply to the media file. Each cut should have a 'start' and 'end' time in seconds.",
@@ -22,7 +22,7 @@ class EditMediaCreateRequest(BaseModel):
 
 class EditMediaBatchItem(BaseModel):
     media_id: int = Field(..., description="ID of the media file to edit.")
-    edits: EditMediaCreateRequest = Field(
+    edits: EditMediaModel = Field(
         ..., description="Edits to apply to the media file."
     )
 
