@@ -96,7 +96,7 @@ class MediaProcessingImpl(MediaProcessing):
             raise NotFoundError(f"Media file '{media_name}' not found on disk")
 
         with open(file_path, "rb") as buffer:
-            return buffer.read(), media.media_orginal_name
+            return buffer.read(), media.media_original_name
 
     @staticmethod
     def __get_media_type(file_path: Path) -> MediaType:
