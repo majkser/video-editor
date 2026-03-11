@@ -2,9 +2,8 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse
 
 from app.dependencies.auth import get_current_user
-from app.interfaces.still_video import StillVideo
-from app.providers.media import MediaProvider
 from app.schemas.still_video import StillVideoRequest
+from app.dependencies.annotated import StillVideoService
 
 router = APIRouter(prefix="/still", tags=["still to video"])
 
@@ -12,7 +11,7 @@ router = APIRouter(prefix="/still", tags=["still to video"])
 @router.post("/generate-video", dependencies=[Depends(get_current_user)])
 async def combine_still_with_audio(
     request: StillVideoRequest,
-    still_video_service: StillVideo = Depends(MediaProvider.get_still_video_service),
+    still_video_service: StillVideoService,
 ) -> FileResponse:
     result = await still_video_service.combine_still_with_audio(
         request.still_id, request.audio_id

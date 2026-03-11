@@ -1,10 +1,9 @@
 from fastapi import Header, Depends
 
 from app.error_handler.error_handler import UnauthorizedError
-from ..models.user import UserModel
-from ..repositories.user import UserModelRepository
-from ..providers.user import UserProvider
-from fastapi import status
+from app.models.user import UserModel
+from app.repositories.user import UserModelRepository
+from app.providers.user import UserProvider
 
 
 async def get_current_user(

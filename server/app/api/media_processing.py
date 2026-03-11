@@ -1,11 +1,9 @@
-from fastapi import APIRouter, UploadFile, Depends, Query
+from fastapi import APIRouter, UploadFile, Depends
 from fastapi.responses import Response
 from urllib.parse import quote
 
 from app.dependencies.auth import get_current_user
-from app.interfaces.media_processing import MediaProcessing
-from app.models.user import UserModel
-from app.providers.media import MediaProvider
+from app.dependencies.annotated import CurrentUser, Project_id, MediaProcessingService
 
 router = APIRouter(prefix="/media", tags=["media"])
 
@@ -13,11 +11,9 @@ router = APIRouter(prefix="/media", tags=["media"])
 @router.post("/upload")
 async def upload_media(
     file: UploadFile,
-    project_id: int = Query(..., description="ID of the project to link the media to"),
-    current_user: UserModel = Depends(get_current_user),
-    media_processing: MediaProcessing = Depends(
-        MediaProvider.get_media_processing_service
-    ),
+    project_id: Project_id,
+    current_user: CurrentUser,
+    media_processing: MediaProcessingService,
 ):
     return await media_processing.upload_media(file, project_id, current_user.user_id)
 
@@ -25,9 +21,7 @@ async def upload_media(
 @router.get("/download/{media_id}", dependencies=[Depends(get_current_user)])
 async def download_media(
     media_id: int,
-    media_processing: MediaProcessing = Depends(
-        MediaProvider.get_media_processing_service
-    ),
+    media_processing: MediaProcessingService,
 ):
 
     media_bytes, orginal_filename = await media_processing.send_media(media_id)
