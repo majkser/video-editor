@@ -1,8 +1,11 @@
+from typing import Annotated
+
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from ..database import get_db_session
-from ..repositories.user import UserModelRepository
-from ..services.user import UserImpl
+from app.database import get_db_session
+from app.repositories.user import UserModelRepository
+from app.services.user import UserImpl
+from app.interfaces.user import User
 
 
 class UserProvider:
@@ -17,3 +20,6 @@ class UserProvider:
         repository: UserModelRepository = Depends(get_repository),
     ) -> UserImpl:
         return UserImpl(repository=repository)
+
+
+UserServiceDep = Annotated[User, Depends(UserProvider.get_service)]

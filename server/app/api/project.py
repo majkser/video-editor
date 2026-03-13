@@ -2,7 +2,8 @@ from fastapi import APIRouter
 from fastapi import status
 
 from app.schemas.project import ProjectCreateRequest, ProjectCreateResponse
-from app.dependencies.annotated import CurrentUser, ProjectService
+from app.providers.project import ProjectServiceDep
+from app.dependencies.auth import CurrentUserDep
 
 router = APIRouter(prefix="/project", tags=["project"])
 
@@ -14,8 +15,8 @@ router = APIRouter(prefix="/project", tags=["project"])
 )
 async def create_project(
     request: ProjectCreateRequest,
-    current_user: CurrentUser,
-    project_service: ProjectService,
+    current_user: CurrentUserDep,
+    project_service: ProjectServiceDep,
 ):
     project = await project_service.create_project(
         project_name=request.project_name,

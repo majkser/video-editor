@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Annotated
 
 from fastapi.params import Depends
 from sqlalchemy.orm import Session
@@ -58,3 +59,16 @@ class MediaProvider:
             upload_dir=MediaProvider.UPLOAD_DIR,
             repository=repository,
         )
+
+
+MediaProcessingServiceDep = Annotated[
+    MediaProcessing, Depends(MediaProvider.get_media_processing_service)
+]
+
+EditMediaServiceDep = Annotated[
+    EditMedia, Depends(MediaProvider.get_edit_media_service)
+]
+
+StillVideoServiceDep = Annotated[
+    StillVideo, Depends(MediaProvider.get_still_video_service)
+]

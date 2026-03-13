@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from fastapi import status
 
 from app.schemas.user import UserRegisterRequest, UserRegisterResponse
-from app.dependencies.annotated import UserService
+from app.providers.user import UserServiceDep
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/user", tags=["user"])
 )
 async def register_user(
     request: UserRegisterRequest,
-    user_service: UserService,
+    user_service: UserServiceDep,
 ):
     user = await user_service.register_user(request.username)
     return UserRegisterResponse(

@@ -1,8 +1,11 @@
+from typing import Annotated
+
 from fastapi import Depends
 from sqlalchemy.orm import Session
-from ..database import get_db_session
-from ..repositories.project import ProjectModelRepository
-from ..services.project import ProjectImpl
+from app.database import get_db_session
+from app.repositories.project import ProjectModelRepository
+from app.services.project import ProjectImpl
+from app.interfaces.project import Project
 
 
 class ProjectProvider:
@@ -17,3 +20,6 @@ class ProjectProvider:
         repository: ProjectModelRepository = Depends(get_repository),
     ) -> ProjectImpl:
         return ProjectImpl(repository=repository)
+
+
+ProjectServiceDep = Annotated[Project, Depends(ProjectProvider.get_service)]

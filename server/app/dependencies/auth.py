@@ -1,4 +1,5 @@
 from fastapi import Header, Depends
+from typing import Annotated
 
 from app.error_handler.error_handler import UnauthorizedError
 from app.models.user import UserModel
@@ -17,3 +18,6 @@ async def get_current_user(
         raise UnauthorizedError("Invalid API key provided")
 
     return user
+
+
+CurrentUserDep = Annotated[UserModel, Depends(get_current_user)]
