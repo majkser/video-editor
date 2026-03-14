@@ -26,16 +26,18 @@ class EditMediaImpl(EditMedia):
         self, request: EditMediaBatchRequest
     ) -> EditMediaBatchResponse:
         all_segments = []
-        media_type = None
+        has_video = False
 
         for item in request.edits:
             try:
                 result = await self.__edit_media(item.media_id, item.edits)
                 all_segments.append(result)
-                if media_type is None:
-                    media_type = result["media_type"]
+                if result["media_type"] == MediaType.VIDEO:
+                    has_video = True
             except (NotFoundError, FfmpegError) as e:
                 pass
+
+        output_media_type = MediaType.VIDEO if has_video else MediaType.AUDIO
 
         target_resolution = (request.target_width, request.target_height)
         target_fps = request.target_fps
@@ -47,7 +49,7 @@ class EditMediaImpl(EditMedia):
             self.__combine_streams_into_output(
                 all_segments,
                 output_path,
-                media_type,
+                output_media_type,
                 target_resolution,
                 target_fps,
                 target_sample_rate,
@@ -57,7 +59,7 @@ class EditMediaImpl(EditMedia):
                 MediaModel(
                     media_name=output_filename,
                     media_original_name=output_filename,
-                    media_type=media_type,
+                    media_type=output_media_type,
                     project_id=request.project_id,
                     width=target_resolution[0],
                     height=target_resolution[1],
@@ -81,7 +83,8 @@ class EditMediaImpl(EditMedia):
         input_path = self.UPLOAD_DIR / media_file.media_name
 
         stream = ffmpeg.input(str(input_path))
-        streams_to_concat = []
+        video_streams = []
+        audio_streams = []
 
         if edits.cuts:
             for cut in edits.cuts:
@@ -94,22 +97,23 @@ class EditMediaImpl(EditMedia):
                     a_cut = stream.audio.filter_("atrim", start=start, end=end).filter_(
                         "asetpts", "PTS-STARTPTS"
                     )
-                    streams_to_concat.append(v_cut)
-                    streams_to_concat.append(a_cut)
+                    video_streams.append(v_cut)
+                    audio_streams.append(a_cut)
                 elif media_file.media_type == MediaType.AUDIO:
                     a_cut = stream.filter_("atrim", start=start, end=end).filter_(
                         "asetpts", "PTS-STARTPTS"
                     )
-                    streams_to_concat.append(a_cut)
+                    audio_streams.append(a_cut)
         else:
             if media_file.media_type == MediaType.VIDEO:
-                streams_to_concat.append(stream.video)
-                streams_to_concat.append(stream.audio)
+                video_streams.append(stream.video)
+                audio_streams.append(stream.audio)
             else:
-                streams_to_concat.append(stream)
+                audio_streams.append(stream)
 
         return {
-            "streams": streams_to_concat,
+            "video_streams": video_streams,
+            "audio_streams": audio_streams,
             "media_type": media_file.media_type,
             "media_id": media_id,
         }
@@ -118,42 +122,57 @@ class EditMediaImpl(EditMedia):
         self,
         all_segments: list[dict],
         output_path: Path,
-        media_type: MediaType,
+        output_media_type: MediaType,
         target_resolution: tuple[int, int],
         target_fps: float,
         target_sample_rate: int,
     ):
-        all_streams = []
+        all_video_streams = []
+        all_audio_streams = []
+
         for segment in all_segments:
-            streams = segment["streams"]
 
-            if media_type == MediaType.VIDEO:
-                normalized_streams = []
-                for i in range(0, len(streams), 2):
-                    v_stream = streams[i]
-                    a_stream = streams[i + 1]
+            for v in segment["video_streams"]:
+                v = v.filter("scale", target_resolution[0], target_resolution[1])
+                v = v.filter("setsar", "1/1")
+                v = v.filter("fps", fps=target_fps)
+                v = v.filter("format", "yuv420p")
+                all_video_streams.append(v)
 
-                    v_stream = v_stream.filter(
-                        "scale", target_resolution[0], target_resolution[1]
-                    )
-                    v_stream = v_stream.filter("setsar", "1/1")
-                    v_stream = v_stream.filter("fps", fps=target_fps)
-                    v_stream = v_stream.filter("format", "yuv420p")
+            for a in segment["audio_streams"]:
+                a = a.filter("aresample", target_sample_rate)
+                all_audio_streams.append(a)
 
-                    a_stream = a_stream.filter("aresample", target_sample_rate)
+        if output_media_type == MediaType.VIDEO:
 
-                    normalized_streams.append(v_stream)
-                    normalized_streams.append(a_stream)
-                all_streams.extend(normalized_streams)
+            if len(all_video_streams) == len(all_audio_streams):
+                interleaved_streams = []
+                for v, a in zip(all_video_streams, all_audio_streams):
+                    interleaved_streams.append(v)
+                    interleaved_streams.append(a)
+                out = ffmpeg.concat(*interleaved_streams, v=1, a=1)
+                ffmpeg.output(out, str(output_path)).overwrite_output().run(quiet=True)
+
             else:
-                normalized_streams = []
-                for stream in streams:
-                    stream = stream.filter("aresample", target_sample_rate)
-                    normalized_streams.append(stream)
-                all_streams.extend(normalized_streams)
+                video_part = (
+                    ffmpeg.concat(*all_video_streams, v=1, a=0)
+                    if len(all_video_streams) > 1
+                    else all_video_streams[0]
+                )
+                audio_part = (
+                    ffmpeg.concat(*all_audio_streams, v=0, a=1)
+                    if len(all_audio_streams) > 1
+                    else all_audio_streams[0]
+                )
 
-        v = 1 if media_type == MediaType.VIDEO else 0
-        combined_stream = ffmpeg.concat(*all_streams, v=v, a=1)
-        ffmpeg.output(combined_stream, str(output_path)).overwrite_output().run(
-            quiet=True
-        )
+                ffmpeg.output(
+                    video_part, audio_part, str(output_path)
+                ).overwrite_output().run(quiet=True)
+
+        else:
+            out = (
+                ffmpeg.concat(*all_audio_streams, v=0, a=1)
+                if len(all_audio_streams) > 1
+                else all_audio_streams[0]
+            )
+            ffmpeg.output(out, str(output_path)).overwrite_output().run(quiet=True)
