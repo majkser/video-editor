@@ -169,7 +169,8 @@ class EditMediaImpl(EditMedia):
                     video_part, audio_part, str(output_path)
                 ).overwrite_output().run(quiet=True)
 
-        else:
+        if output_media_type == MediaType.AUDIO:
+            
             out = (
                 ffmpeg.concat(*all_audio_streams, v=0, a=1)
                 if len(all_audio_streams) > 1
