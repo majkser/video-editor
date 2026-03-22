@@ -15,9 +15,14 @@ class Cut(BaseModel):
 
 class EditMediaModel(BaseModel):
     cuts: list[Cut] = Field(
-        ...,
+        default=[],
         description="List of cuts to apply to the media file. Each cut should have a 'start' and 'end' time in seconds.",
         example=[{"start": 10, "end": 20}, {"start": 30, "end": 40}],
+    )
+    display_duration: float = Field(
+        default=3.0,
+        description="Duration in seconds to display image (only for IMAGE media type).",
+        example=3.0,
     )
 
 
@@ -80,7 +85,7 @@ class EditMediaBatchRequest(BaseModel):
                     },
                     {
                         "media_id": 2,
-                        "edits": {"cuts": [{"start": 3, "end": 6}]},
+                        "edits": {"cuts": [], "display_duration": 5.0},
                     },
                 ],
                 "project_id": 1,

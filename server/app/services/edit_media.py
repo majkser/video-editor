@@ -33,7 +33,7 @@ class EditMediaImpl(EditMedia):
             try:
                 result = await self.__edit_media(item.media_id, item.edits)
                 all_segments.append(result)
-                if result["media_type"] == MediaType.VIDEO:
+                if result["media_type"] in (MediaType.VIDEO, MediaType.IMAGE):
                     has_video = True
             except (NotFoundError, FfmpegError) as e:
                 pass
@@ -92,9 +92,22 @@ class EditMediaImpl(EditMedia):
             raise NotFoundError(f"Media file with ID {media_id} not found")
         input_path = self.UPLOAD_DIR / media_file.media_name
 
-        stream = ffmpeg.input(str(input_path))
         video_streams = []
         audio_streams = []
+
+        if media_file.media_type == MediaType.IMAGE:
+            image_stream = ffmpeg.input(
+                str(input_path), loop=1, t=edits.display_duration
+            )
+            video_streams.append(image_stream.video)
+            return {
+                "video_streams": video_streams,
+                "audio_streams": [],
+                "media_type": media_file.media_type,
+                "media_id": media_id,
+            }
+
+        stream = ffmpeg.input(str(input_path))
 
         if edits.cuts:
             for cut in edits.cuts:
@@ -164,12 +177,8 @@ class EditMediaImpl(EditMedia):
                 out = ffmpeg.concat(*interleaved_streams, v=1, a=1)
                 ffmpeg.output(out, str(output_path)).overwrite_output().run(quiet=True)
             else:
-                video_part = self.__concat_streams(
-                    all_video_streams, v=1, a=0
-                )
-                audio_part = self.__concat_streams(
-                    all_audio_streams, v=0, a=1
-                )
+                video_part = self.__concat_streams(all_video_streams, v=1, a=0)
+                audio_part = self.__concat_streams(all_audio_streams, v=0, a=1)
                 ffmpeg.output(
                     video_part, audio_part, str(output_path)
                 ).overwrite_output().run(quiet=True)
@@ -186,11 +195,17 @@ class EditMediaImpl(EditMedia):
         target_fps: float,
         target_sample_rate: int,
     ):
-        video_segments = [s for s in all_segments if s["media_type"] == MediaType.VIDEO]
+        video_segments = [
+            s
+            for s in all_segments
+            if s["media_type"] in (MediaType.VIDEO, MediaType.IMAGE)
+        ]
         audio_segments = [s for s in all_segments if s["media_type"] == MediaType.AUDIO]
 
         if not video_segments or not audio_segments:
-            raise FfmpegError("MUX requires at least one VIDEO and one AUDIO file")
+            raise FfmpegError(
+                "MUX requires at least one VIDEO/IMAGE and one AUDIO file"
+            )
 
         video_tracks = [v for s in video_segments for v in s["video_streams"]]
         audio_tracks = [a for s in audio_segments for a in s["audio_streams"]]
