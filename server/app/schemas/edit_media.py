@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
+from enum import Enum
 
 
 class Cut(BaseModel):
@@ -25,6 +26,11 @@ class EditMediaBatchItem(BaseModel):
     edits: EditMediaModel = Field(..., description="Edits to apply to the media file.")
 
 
+class EditOperation(str, Enum):
+    CONCAT = "concat"
+    MUX = "mux"
+
+
 class EditMediaBatchRequest(BaseModel):
     edits: list[EditMediaBatchItem] = Field(
         ...,
@@ -33,6 +39,10 @@ class EditMediaBatchRequest(BaseModel):
     )
     project_id: int = Field(
         ..., description="ID of the project containing the media files to edit."
+    )
+    operation: EditOperation = Field(
+        default=EditOperation.CONCAT,
+        description="Concat: joins clips sequentially. Mux: overlays audio onto video track.",
     )
     output_format: str = Field(
         default="mp4",
@@ -74,6 +84,7 @@ class EditMediaBatchRequest(BaseModel):
                     },
                 ],
                 "project_id": 1,
+                "operation": "concat", # or "mux"
                 "output_format": "mp4",
                 "target_width": 1920,
                 "target_height": 1080,

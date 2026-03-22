@@ -11,6 +11,7 @@ from app.schemas.edit_media import (
     EditMediaBatchRequest,
     EditMediaBatchResponse,
     EditMediaModel,
+    EditOperation,
 )
 
 
@@ -38,7 +39,6 @@ class EditMediaImpl(EditMedia):
                 pass
 
         output_media_type = MediaType.VIDEO if has_video else MediaType.AUDIO
-
         target_resolution = (request.target_width, request.target_height)
         target_fps = request.target_fps
         target_sample_rate = request.target_sample_rate
@@ -46,14 +46,24 @@ class EditMediaImpl(EditMedia):
         if all_segments:
             output_filename = f"combined_edited_{uuid.uuid4()}.{request.output_format}"
             output_path = self.UPLOAD_DIR / output_filename
-            self.__combine_streams_into_output(
-                all_segments,
-                output_path,
-                output_media_type,
-                target_resolution,
-                target_fps,
-                target_sample_rate,
-            )
+
+            if request.operation == EditOperation.MUX:
+                self.__mux_streams_into_output(
+                    all_segments,
+                    output_path,
+                    target_resolution,
+                    target_fps,
+                    target_sample_rate,
+                )
+            else:
+                self.__combine_streams_into_output(
+                    all_segments,
+                    output_path,
+                    output_media_type,
+                    target_resolution,
+                    target_fps,
+                    target_sample_rate,
+                )
 
             self.repository.create_media_model_entry(
                 MediaModel(
@@ -61,13 +71,13 @@ class EditMediaImpl(EditMedia):
                     media_original_name=output_filename,
                     media_type=output_media_type,
                     project_id=request.project_id,
-                    width=target_resolution[0],
-                    height=target_resolution[1],
+                    width=target_resolution[0] if has_video else None,
+                    height=target_resolution[1] if has_video else None,
                     duration=ffmpeg.probe(str(output_path))["format"]["duration"],
                     codec=ffmpeg.probe(str(output_path))["streams"][0][
                         "codec_name"
                     ],  # TODO: allow user to choose codec (add req param)
-                    fps=target_fps,
+                    fps=target_fps if has_video else None,
                     size_in_bytes=output_path.stat().st_size,
                 )
             )
@@ -89,7 +99,6 @@ class EditMediaImpl(EditMedia):
         if edits.cuts:
             for cut in edits.cuts:
                 start, end = cut.start, cut.end
-
                 if media_file.media_type == MediaType.VIDEO:
                     v_cut = stream.video.trim(start=start, end=end).setpts(
                         "PTS-STARTPTS"
@@ -117,6 +126,9 @@ class EditMediaImpl(EditMedia):
             "media_type": media_file.media_type,
             "media_id": media_id,
         }
+
+    def __concat_streams(self, streams: list, v: int, a: int):
+        return ffmpeg.concat(*streams, v=v, a=a) if len(streams) > 1 else streams[0]
 
     def __combine_streams_into_output(
         self,
@@ -148,32 +160,54 @@ class EditMediaImpl(EditMedia):
             if len(all_video_streams) == len(all_audio_streams):
                 interleaved_streams = []
                 for v, a in zip(all_video_streams, all_audio_streams):
-                    interleaved_streams.append(v)
-                    interleaved_streams.append(a)
+                    interleaved_streams.extend([v, a])
                 out = ffmpeg.concat(*interleaved_streams, v=1, a=1)
                 ffmpeg.output(out, str(output_path)).overwrite_output().run(quiet=True)
-
             else:
-                video_part = (
-                    ffmpeg.concat(*all_video_streams, v=1, a=0)
-                    if len(all_video_streams) > 1
-                    else all_video_streams[0]
+                video_part = self.__concat_streams(
+                    all_video_streams, v=1, a=0
                 )
-                audio_part = (
-                    ffmpeg.concat(*all_audio_streams, v=0, a=1)
-                    if len(all_audio_streams) > 1
-                    else all_audio_streams[0]
+                audio_part = self.__concat_streams(
+                    all_audio_streams, v=0, a=1
                 )
-
                 ffmpeg.output(
                     video_part, audio_part, str(output_path)
                 ).overwrite_output().run(quiet=True)
 
         if output_media_type == MediaType.AUDIO:
-            
-            out = (
-                ffmpeg.concat(*all_audio_streams, v=0, a=1)
-                if len(all_audio_streams) > 1
-                else all_audio_streams[0]
-            )
+            out = self.__concat_streams(all_audio_streams, v=0, a=1)
             ffmpeg.output(out, str(output_path)).overwrite_output().run(quiet=True)
+
+    def __mux_streams_into_output(
+        self,
+        all_segments: list[dict],
+        output_path: Path,
+        target_resolution: tuple[int, int],
+        target_fps: float,
+        target_sample_rate: int,
+    ):
+        video_segments = [s for s in all_segments if s["media_type"] == MediaType.VIDEO]
+        audio_segments = [s for s in all_segments if s["media_type"] == MediaType.AUDIO]
+
+        if not video_segments or not audio_segments:
+            raise FfmpegError("MUX requires at least one VIDEO and one AUDIO file")
+
+        video_tracks = [v for s in video_segments for v in s["video_streams"]]
+        audio_tracks = [a for s in audio_segments for a in s["audio_streams"]]
+
+        normalized_video = []
+        for v in video_tracks:
+            v = v.filter("scale", target_resolution[0], target_resolution[1])
+            v = v.filter("setsar", "1/1")
+            v = v.filter("fps", fps=target_fps)
+            v = v.filter("format", "yuv420p")
+            normalized_video.append(v)
+
+        audio_tracks = [a.filter("aresample", target_sample_rate) for a in audio_tracks]
+
+        video_part = self.__concat_streams(normalized_video, v=1, a=0)
+        audio_part = self.__concat_streams(audio_tracks, v=0, a=1)
+
+        ffmpeg.output(video_part, audio_part, str(output_path)).overwrite_output().run(
+            quiet=True
+        )
