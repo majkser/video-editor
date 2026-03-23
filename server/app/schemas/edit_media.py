@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
+from enum import Enum
 
 
 class Cut(BaseModel):
@@ -14,15 +15,25 @@ class Cut(BaseModel):
 
 class EditMediaModel(BaseModel):
     cuts: list[Cut] = Field(
-        ...,
+        default=[],
         description="List of cuts to apply to the media file. Each cut should have a 'start' and 'end' time in seconds.",
         example=[{"start": 10, "end": 20}, {"start": 30, "end": 40}],
+    )
+    display_duration: float = Field(
+        default=3.0,
+        description="Duration in seconds to display image (only for IMAGE media type).",
+        example=3.0,
     )
 
 
 class EditMediaBatchItem(BaseModel):
     media_id: int = Field(..., description="ID of the media file to edit.")
     edits: EditMediaModel = Field(..., description="Edits to apply to the media file.")
+
+
+class EditOperation(str, Enum):
+    CONCAT = "concat"
+    MUX = "mux"
 
 
 class EditMediaBatchRequest(BaseModel):
@@ -33,6 +44,10 @@ class EditMediaBatchRequest(BaseModel):
     )
     project_id: int = Field(
         ..., description="ID of the project containing the media files to edit."
+    )
+    operation: EditOperation = Field(
+        default=EditOperation.CONCAT,
+        description="Concat: joins clips sequentially. Mux: overlays audio onto video track.",
     )
     output_format: str = Field(
         default="mp4",
@@ -70,10 +85,11 @@ class EditMediaBatchRequest(BaseModel):
                     },
                     {
                         "media_id": 2,
-                        "edits": {"cuts": [{"start": 3, "end": 6}]},
+                        "edits": {"cuts": [], "display_duration": 5.0},
                     },
                 ],
                 "project_id": 1,
+                "operation": "concat", # or "mux"
                 "output_format": "mp4",
                 "target_width": 1920,
                 "target_height": 1080,
